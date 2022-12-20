@@ -1,9 +1,6 @@
-function [kernel, kernel_range, tt_y, tt_x, tt_s] = zcam_kernel_extended(...
-    mcode, mask_pitch, p_t, q_t, ds, zs, nsamples, matname)
-    % k(xt, yt, zt) = 1/zt^2 * m(xt/zt, yt/zt)
-    
+function [kernel, kernel_range, tt_y, tt_x, tt_s] = zcam_kernel_single(mcode, mask_pitch, p_t, q_t, ds, use_id, nsamples, matname)
     % load or build zcam kernel
-   if nargin < 6,
+    if nargin < 6,
         nsamples = 5;
         matname = '';
     end
@@ -11,31 +8,29 @@ function [kernel, kernel_range, tt_y, tt_x, tt_s] = zcam_kernel_extended(...
     if exist(matname, 'file') % attempt to load kernel
         load(matname, 'kernel', 'kernel_range', 'tt_y', 'tt_x', 'tt_s');
         % verify dimensions match
-        if all(size(tt_y) == size(q_t)) && all(size(tt_x) == size(p_t)),
+        if all(size(tt_y) == size(q_t)) && all(size(tt_x) == size(p_t)) && all(size(tt_s) == size(ds)),
             return;
-        end % else, compute kernel
+        end
     end
-    
-    dt = 1 ./ ds;
-    tt_y = q_t;%min(q_t)*2 : yy_pitch : max(q_t)*2 + 1e-8;
-    tt_x = p_t;%min(p_t)*2 : xx_pitch : max(p_t)*2 + 1e-8;
-    tt_s = 1 ./ zs;
+        
+    dt = 1 ./ ds; %ds is assume to be linear in 1./ds
     xx_pitch = pitch_of(p_t);
     yy_pitch = pitch_of(q_t);
-    if length(dt) > 1, ss_pitch = pitch_of(dt); else ss_pitch = pitch_of(tt_s); end
-    % check tt_s lie on the same grid as dt
-    if length(tt_s) > 1, assert(abs(ss_pitch - pitch_of(tt_s)) < 1e-8); end
+    ss_pitch = pitch_of(dt);
+    tt_y = q_t;
+    tt_x = p_t;
+    tt_s = -dt(end:-1:1);
     
     mt_y = min(q_t) - max(tt_y) : yy_pitch : max(q_t) - min(tt_y) + 1e-8;
     mt_x = min(p_t) - max(tt_x) : xx_pitch : max(p_t) - min(tt_x) + 1e-8;
-    mt_s = min(dt) - max(tt_s)  : ss_pitch : max(dt) - min(tt_s) + 1e-8;
-
+    mt_s = dt(use_id) - max(tt_s)  : ss_pitch : dt(use_id) - min(tt_s) + 1e-8;
+    
     mask_height = size(mcode, 1) * mask_pitch; 
     mask_width  = size(mcode, 2) * mask_pitch;
     mask_yy = linspace(-(mask_height/2 - mask_pitch/2), ...
-                         mask_height/2 - mask_pitch/2, size(mcode, 1));
+                        mask_height/2 - mask_pitch/2, size(mcode, 1));
     mask_xx = linspace(-(mask_width/2 - mask_pitch/2), ...
-                         mask_width/2 - mask_pitch/2,  size(mcode, 2));
+                        mask_width/2 - mask_pitch/2,  size(mcode, 2));
 
     % Monte carlo render to avoid aliasing
     % 1. compute low pass filter widths

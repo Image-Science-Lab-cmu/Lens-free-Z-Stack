@@ -42,14 +42,10 @@ mseq_28_30p = struct('use_mask', 7, 'name', 'mseq 28 30p', ...
 %                      'mask_pitch', 100 * 1e-3);
 
 % reconstruction algorithms & parameters
-cgs_high_reg = struct('name', 'cgs 1e-1', 'recons_type', 'cgs-fft', 'lambda', 1e-1, 'tol', 1e-6, 'maxit', 5);
-cgs_med_reg = struct('name', 'cgs 1e-2', 'recons_type', 'cgs-fft', 'lambda', 1e-2, 'tol', 1e-6, 'maxit', 5);
-fista_med_reg = struct('name', 'fista 1e-2', 'recons_type', 'fista', 'lambda', 1e-2, 'maxit', 5);
-fista_low_reg = struct('name', 'fista 1e-3', 'recons_type', 'fista', 'lambda', 1e-3, 'maxit', 5);
-% cgs_high_reg = struct('name', 'cgs 1e-1', 'recons_type', 'cgs-fft', 'lambda', 1e-1, 'tol', 1e-6, 'maxit', 200);
-% cgs_med_reg = struct('name', 'cgs 1e-2', 'recons_type', 'cgs-fft', 'lambda', 1e-2, 'tol', 1e-6, 'maxit', 200);
-% fista_med_reg = struct('name', 'fista 1e-2', 'recons_type', 'fista', 'lambda', 1e-2, 'maxit', 200);
-% fista_low_reg = struct('name', 'fista 1e-3', 'recons_type', 'fista', 'lambda', 1e-3, 'maxit', 200);
+cgs_high_reg = struct('name', 'cgs 1e-1', 'recons_type', 'cgs-fft', 'lambda', 1e-1, 'tol', 1e-6, 'maxit', 50);
+cgs_med_reg = struct('name', 'cgs 1e-2', 'recons_type', 'cgs-fft', 'lambda', 1e-2, 'tol', 1e-6, 'maxit', 50);
+fista_med_reg = struct('name', 'fista 1e-2', 'recons_type', 'fista', 'lambda', 1e-2, 'maxit', 50);
+fista_low_reg = struct('name', 'fista 1e-3', 'recons_type', 'fista', 'lambda', 1e-3, 'maxit', 50);
 
 % filter on measurements
 no_hpf = struct('name', '', 'type', 'no_filter');
@@ -88,6 +84,8 @@ Hs = round(size(gt_intensity, 2)/bin_size);
 Ws = round(size(gt_intensity, 3)/bin_size);
 siz_i = [N Hs Ws C];
 
+zs = -ds(end:-1:1); % scene z values
+
 figure('units', 'normalized', 'outerposition', [0 0 0.5 1])
 for jj = 1:length(exps),
     mask_name = exps{jj}.mask.name;
@@ -103,7 +101,7 @@ for jj = 1:length(exps),
 
     % get 3D kernel (write or reads from cache)
     [kernel, k_range, tt_y, tt_x, tt_z] = zcam_kernel_extended(...
-        mcode, mask_pitch, p_t, q_t, ds, use_id, nsamples, ...
+        mcode, mask_pitch, p_t, q_t, [ds(use_id)], zs, nsamples, ...
         sprintf('cache/kernel_%s_id%d.mat', mask_name, use_id));
 
     % plot kernel
